@@ -1,45 +1,46 @@
-package mw
+package plg
 
 import (
-	mw "Gamora/src/Aquaman/base/middleware"
 	"fmt"
 	"log"
 	"sync/atomic"
+
+	aqua "github.com/Justyer/Aquaman"
 )
 
 // 中间件
 type Middleware struct {
-	Node            *mw.MWNode
-	IN_CHL          chan *mw.Carrior
-	IN2_CHL         chan *mw.Carrior
+	Node            *aqua.MWNode
+	IN_CHL          chan *aqua.Carrior
+	IN2_CHL         chan *aqua.Carrior
 	IN_CHAN_SWITCH  bool
-	OUT_CHL         chan *mw.Carrior
-	OUT2_CHL        chan *mw.Carrior
-	MAIN_OUT_CHL    chan *mw.Carrior
+	OUT_CHL         chan *aqua.Carrior
+	OUT2_CHL        chan *aqua.Carrior
+	MAIN_OUT_CHL    chan *aqua.Carrior
 	OUT_CHAN_SWITCH bool
 }
 
-func NewMiddleware() mw.MiddleManager {
+func NewMiddleware() aqua.MiddleManager {
 	return &Middleware{}
 }
 
-func (m *Middleware) SetMWNode(mwn *mw.MWNode) {
+func (m *Middleware) SetMWNode(mwn *aqua.MWNode) {
 	m.Node = mwn
 }
 
-func (m *Middleware) SetInChan(in chan *mw.Carrior) {
+func (m *Middleware) SetInChan(in chan *aqua.Carrior) {
 	m.IN_CHL = in
 }
 
-func (m *Middleware) SetOutChan(out chan *mw.Carrior) {
+func (m *Middleware) SetOutChan(out chan *aqua.Carrior) {
 	m.OUT_CHL = out
 }
 
-func (m *Middleware) SetIn2Chan(in chan *mw.Carrior) {
+func (m *Middleware) SetIn2Chan(in chan *aqua.Carrior) {
 	m.IN2_CHL = in
 }
 
-func (m *Middleware) SetOut2Chan(out chan *mw.Carrior) {
+func (m *Middleware) SetOut2Chan(out chan *aqua.Carrior) {
 	m.OUT2_CHL = out
 }
 
@@ -49,7 +50,7 @@ func (m *Middleware) DefaultChanConfig() {
 	m.IN_CHAN_SWITCH = true
 }
 
-func (m *Middleware) GetFreeOutChan() chan *mw.Carrior {
+func (m *Middleware) GetFreeOutChan() chan *aqua.Carrior {
 	if m.OUT_CHAN_SWITCH {
 		return m.OUT2_CHL
 	} else {

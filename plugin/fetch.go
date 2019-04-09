@@ -1,9 +1,10 @@
-package mw
+package plg
 
 import (
-	mw "Gamora/src/Aquaman/base/middleware"
 	"fmt"
 	"time"
+
+	aqua "github.com/Justyer/Aquaman"
 )
 
 type Fetcher interface {
@@ -14,7 +15,7 @@ type Fetch struct {
 	Middleware
 }
 
-func NewFetch() mw.MiddleManager {
+func NewFetch() aqua.MiddleManager {
 	return &Fetch{}
 }
 
@@ -27,7 +28,7 @@ func (m *Fetch) Run(grt_idx int) {
 
 	for a {
 		for i := 0; i < 3; i++ {
-			x := &mw.Carrior{
+			x := &aqua.Carrior{
 				Data: []byte(fmt.Sprintf("%d", i)),
 			}
 			m.MAIN_OUT_CHL <- x
@@ -37,7 +38,7 @@ func (m *Fetch) Run(grt_idx int) {
 	m.Close()
 
 }
-func (m *Fetch) Instance(c *mw.Carrior) Fetcher {
+func (m *Fetch) Instance(c *aqua.Carrior) Fetcher {
 	return nil
 }
 

@@ -1,8 +1,9 @@
-package mw
+package plg
 
 import (
-	mw "Gamora/src/Aquaman/base/middleware"
 	"fmt"
+
+	aqua "github.com/Justyer/Aquaman"
 )
 
 type Downloader interface {
@@ -14,14 +15,14 @@ type Download struct {
 	Middleware
 }
 
-func NewDownload() mw.MiddleManager {
+func NewDownload() aqua.MiddleManager {
 	return &Download{}
 }
 
 func (m *Download) Run(grt_idx int) {
 	fmt.Printf("down_inchan:\n%#v\n%#v\n%d\n%d\n---\n", m, m.IN_CHL, len(m.IN_CHL), cap(m.IN_CHL))
 	for {
-		var c *mw.Carrior
+		var c *aqua.Carrior
 		isUse, ok := false, false
 		select {
 		case c, ok = <-m.IN_CHL:
@@ -40,7 +41,7 @@ func (m *Download) Run(grt_idx int) {
 	}
 	m.Close()
 }
-func (m *Download) Instance(c *mw.Carrior) Downloader {
+func (m *Download) Instance(c *aqua.Carrior) Downloader {
 	return nil
 }
 

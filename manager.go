@@ -1,4 +1,4 @@
-package mw
+package aqua
 
 import (
 	"sync"
@@ -17,7 +17,7 @@ type MiddlewareManager struct {
 	TXLS map[string]*MWNode
 }
 
-func NewMiddlewareManager() *MiddlewareManager {
+func NewMWManager() *MiddlewareManager {
 	return &MiddlewareManager{
 		TXLS: make(map[string]*MWNode),
 	}
