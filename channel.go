@@ -1,7 +1,5 @@
 package aqua
 
-import "fmt"
-
 type Chan struct {
 	CHL     chan *Carrior
 	CHL2    chan *Carrior
@@ -24,26 +22,26 @@ func (c *Chan) Push(e *Carrior) {
 
 func (c *Chan) Pop(f func(*Carrior)) {
 	for {
+		if c.CHL == nil && c.CHL2 == nil {
+			return
+		}
 		var cr *Carrior
-		isUse, ok := false, false
+		var isUse bool
 		select {
-		case cr, ok = <-c.CHL:
-			isUse = ok || isUse
-		case cr, ok = <-c.CHL2:
-			isUse = ok || isUse
+		case cr, isUse = <-c.CHL:
+		case cr, isUse = <-c.CHL2:
 		}
 		if isUse {
 			f(cr)
 		} else {
-			fmt.Println("break")
 			break
 		}
 	}
 }
 
-func (c *Chan) Switch() {
-	c.CHL_USE = !c.CHL_USE
-}
+// func (c *Chan) Switch() {
+// 	c.CHL_USE = !c.CHL_USE
+// }
 
 func (c *Chan) Active() chan *Carrior {
 	if c.CHL_USE {

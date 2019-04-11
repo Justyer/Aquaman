@@ -43,12 +43,10 @@ func (m *Middleware) Pop(f func(*aqua.Carrior), nm string) {
 	for {
 		c := m.InChan
 		if c == nil {
-			fmt.Println("break2", nm)
-			break
+			return
 		}
 		if c.CHL == nil && c.CHL2 == nil {
-			fmt.Println("break blank bil", nm)
-			break
+			return
 		}
 		var cr *aqua.Carrior
 		var isUse bool

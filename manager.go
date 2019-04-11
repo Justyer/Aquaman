@@ -113,6 +113,7 @@ func (mgr *MiddlewareManager) suffixChannel(n string) {
 // 拔出某个中间件
 func (mgr *MiddlewareManager) DropMW(n, mn string) error {
 	p := mgr.TXLS[n]
+	var pp *MWNode
 	var p_in, p_out *Chan
 	for {
 		if p == nil {
@@ -126,6 +127,7 @@ func (mgr *MiddlewareManager) DropMW(n, mn string) error {
 			}
 			break
 		}
+		pp = p
 		p = p.Next
 	}
 	pn := p.Next
@@ -135,12 +137,13 @@ func (mgr *MiddlewareManager) DropMW(n, mn string) error {
 		}
 		p_in.SetFree(p_out.Active())
 	}
+	pp.Next = p.Next
 	return nil
 }
 
 //
 func (mgr *MiddlewareManager) ServiceFinder(n, ii string) {
-	fmt.Println(ii)
+	fmt.Println(ii, "---------")
 	p := mgr.TXLS[n]
 	for {
 		if p == nil {
@@ -157,4 +160,5 @@ func (mgr *MiddlewareManager) ServiceFinder(n, ii string) {
 		}
 		p = p.Next
 	}
+	fmt.Println("---------")
 }

@@ -32,7 +32,7 @@ func (m *Download) Run(grt_idx int) {
 	m.Close()
 }
 func (m *Download) Instance(c *aqua.Carrior) Downloader {
-	fmt.Printf("download: %s, %#v\n", string(c.Data), m.InChan)
+	fmt.Println("download", string(c.Data))
 	return nil
 }
 

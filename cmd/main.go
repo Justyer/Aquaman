@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	aqua "github.com/Justyer/Aquaman"
@@ -37,13 +36,9 @@ func main() {
 	mwm.RegisterTXL("downloader", fetch_node)
 
 	time.AfterFunc(3*time.Second, func() {
-		fmt.Println("\n\n\n\n-----------")
 		mwm.ServiceFinder("downloader", "1")
-		fmt.Println("-----------")
 		mwm.DropMW("downloader", "download")
-		fmt.Println("-----------")
 		mwm.ServiceFinder("downloader", "2")
-		fmt.Printf("-----------\n\n\n\n")
 	})
 
 	// 启动相应业务线
