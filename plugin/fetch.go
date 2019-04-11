@@ -20,19 +20,18 @@ func NewFetch() aqua.MiddleManager {
 }
 
 func (m *Fetch) Run(grt_idx int) {
-	fmt.Printf("fetch_inchan:\n%#v\n%#v\n%d\n%d\n---\n", m, m.IN_CHL, len(m.IN_CHL), cap(m.IN_CHL))
+	fmt.Printf("fetch_inchan:\n%#v\n%#v\n---\n", m, m.InChan)
 	a := true
-	time.AfterFunc(time.Second, func() {
+	time.AfterFunc(10*time.Second, func() {
 		a = false
 	})
 
 	for a {
-		for i := 0; i < 3; i++ {
-			x := &aqua.Carrior{
-				Data: []byte(fmt.Sprintf("%d", i)),
-			}
-			m.MAIN_OUT_CHL <- x
+		x := &aqua.Carrior{
+			Data: []byte("fetch"),
 		}
+		m.OutChan.Push(x)
+		time.Sleep(time.Second)
 	}
 
 	m.Close()

@@ -20,28 +20,19 @@ func NewDownload() aqua.MiddleManager {
 }
 
 func (m *Download) Run(grt_idx int) {
-	fmt.Printf("down_inchan:\n%#v\n%#v\n%d\n%d\n---\n", m, m.IN_CHL, len(m.IN_CHL), cap(m.IN_CHL))
-	for {
-		var c *aqua.Carrior
-		isUse, ok := false, false
-		select {
-		case c, ok = <-m.IN_CHL:
-			isUse = ok || isUse
-		case c, ok = <-m.IN2_CHL:
-			isUse = ok || isUse
-		}
-		if isUse {
-			ins := m.Instance(c)
-			m.Template(ins)
-		} else {
-			fmt.Println("break")
-			break
-		}
+	fmt.Printf("down_inchan:\n%#v\n%#v\n%#v\n%#v\n---\n", m, m.InChan, m.InChan.CHL, m.InChan.CHL2)
+	m.Pop(func(c *aqua.Carrior) {
+		ins := m.Instance(c)
+		m.Template(ins)
+		m.OutChan.Push(&aqua.Carrior{
+			Data: []byte("download"),
+		})
+	}, "down")
 
-	}
 	m.Close()
 }
 func (m *Download) Instance(c *aqua.Carrior) Downloader {
+	fmt.Println("download", string(c.Data))
 	return nil
 }
 
