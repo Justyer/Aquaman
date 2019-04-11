@@ -17,30 +17,31 @@ type MiddleManager interface {
 
 // 中间件管理器
 type MiddlewareManager struct {
-	TXLS map[string]*MWNode
+	TXL *MWNode
+	wg  *sync.WaitGroup
 }
 
 func NewMWManager() *MiddlewareManager {
 	return &MiddlewareManager{
-		TXLS: make(map[string]*MWNode),
+		wg: &sync.WaitGroup{},
 	}
 }
 
 // 注册一条业务线
-func (mgr *MiddlewareManager) RegisterTXL(n string, mwn *MWNode) {
-	mgr.TXLS[n] = mwn
+func (mgr *MiddlewareManager) Register(mwn *MWNode) {
+	mgr.TXL = mwn
 }
 
 // 根据业务线名字执行任务
-func (mgr *MiddlewareManager) ExecuteByName(n string) {
-	mgr.suffixChannel(n)
+func (mgr *MiddlewareManager) ExecuteByName() {
+	mgr.suffixChannel()
 }
 
 // 每个中间件创建的channel为前置
 // func (mgr *MiddlewareManager) prefixChannel(n string) {
 // 	wg := &sync.WaitGroup{}
 
-// 	p := mgr.TXLS[n]
+// 	p := mgr.TXL[n]
 // 	var pp *MWNode
 // 	for {
 // 		if p == nil {
@@ -75,10 +76,8 @@ func (mgr *MiddlewareManager) ExecuteByName(n string) {
 // }
 
 // 每个中间件创建的channel为后置
-func (mgr *MiddlewareManager) suffixChannel(n string) {
-	wg := &sync.WaitGroup{}
-
-	p := mgr.TXLS[n]
+func (mgr *MiddlewareManager) suffixChannel() {
+	p := mgr.TXL
 	var pp *Chan
 	for {
 		if p == nil {
@@ -96,28 +95,67 @@ func (mgr *MiddlewareManager) suffixChannel(n string) {
 			}
 
 			mmrs = append(mmrs, ins)
-			wg.Add(1)
-			go func(wg *sync.WaitGroup, i int, s string) {
+			mgr.wg.Add(1)
+			go func(wg *sync.WaitGroup, i int) {
 				defer wg.Done()
 				ins.Run(i)
-			}(wg, i, p.Name)
+			}(mgr.wg, i)
 		}
 		pp = chl
 		p.Instances = mmrs
 		p = p.Next
 	}
 
-	wg.Wait()
+	mgr.wg.Wait()
+}
+
+// 在某个中间件的前面插入添加的中间件
+func (mgr *MiddlewareManager) InsertMWBack(mn string, nn *MWNode) error {
+	p := mgr.TXL
+	for {
+		if p == nil {
+			return errors.New(fmt.Sprintf("have no middle: %s", mn))
+		}
+		if p.Name == mn {
+			var mmrs []MiddleManager
+			chl := NewChan()
+			chl.Init(nn.CHL_SIZE)
+			for i := 0; i < nn.GRT_NUM; i++ {
+				ins := nn.Create()
+				ins.SetMWNode(nn)
+				ins.SetOutChan(chl)
+				ins.SetInChan(p.Instances[0].GetOutChan())
+
+				mmrs = append(mmrs, ins)
+				mgr.wg.Add(1)
+				go func(wg *sync.WaitGroup, i int) {
+					defer wg.Done()
+					ins.Run(i)
+				}(mgr.wg, i)
+			}
+			nn.Instances = mmrs
+			if p.Next != nil {
+				for i := 0; i < len(p.Next.Instances); i++ {
+					p.Next.Instances[i].SetInChan(chl)
+				}
+			}
+			nn.Next = p.Next
+			p.Next = nn
+			break
+		}
+		p = p.Next
+	}
+	return nil
 }
 
 // 拔出某个中间件
-func (mgr *MiddlewareManager) DropMW(n, mn string) error {
-	p := mgr.TXLS[n]
+func (mgr *MiddlewareManager) DropMW(mn string) error {
+	p := mgr.TXL
 	var pp *MWNode
 	var p_in, p_out *Chan
 	for {
 		if p == nil {
-			return errors.New(fmt.Sprintf("have no %s-%s", n, mn))
+			return errors.New(fmt.Sprintf("have no middle: %s", mn))
 		}
 		if p.Name == mn {
 			p_in = p.Instances[0].GetInChan()
@@ -141,24 +179,36 @@ func (mgr *MiddlewareManager) DropMW(n, mn string) error {
 	return nil
 }
 
-//
-func (mgr *MiddlewareManager) ServiceFinder(n, ii string) {
+// 遍历当前业务线的中间件组成
+func (mgr *MiddlewareManager) MWIter(ii string) {
 	fmt.Println(ii, "---------")
-	p := mgr.TXLS[n]
+	// p := mgr.TXL
+	// for {
+	// 	if p == nil {
+	// 		break
+	// 	}
+	// 	for i := 0; i < len(p.Instances); i++ {
+	// 		in := p.Instances[i].GetInChan()
+	// 		out := p.Instances[i].GetOutChan()
+	// 		fmt.Printf("%s:\n%#v\n", p.Name, p.Instances[i])
+	// 		if in != nil {
+	// 			fmt.Printf("%#v %#v\n", in.CHL, in.CHL2)
+	// 		}
+	// 		fmt.Printf("%#v %#v\n---\n", out.CHL, out.CHL2)
+	// 	}
+	// 	p = p.Next
+	// }
+
+	p := mgr.TXL
 	for {
 		if p == nil {
 			break
 		}
 		for i := 0; i < len(p.Instances); i++ {
-			in := p.Instances[i].GetInChan()
-			out := p.Instances[i].GetOutChan()
-			fmt.Printf("%s:\n%#v\n", p.Name, p.Instances[i])
-			if in != nil {
-				fmt.Printf("%#v %#v\n", in.CHL, in.CHL2)
-			}
-			fmt.Printf("%#v %#v\n---\n", out.CHL, out.CHL2)
+			fmt.Print(p.Name, " ")
 		}
 		p = p.Next
 	}
 	fmt.Println("---------")
+
 }

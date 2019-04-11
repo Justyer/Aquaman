@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	aqua "github.com/Justyer/Aquaman"
@@ -8,18 +12,18 @@ import (
 )
 
 func main() {
-	// f, err := os.Create("cpu")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
+	f, err := os.Create("cpu")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
 
-	// f2, err := os.Create("heap")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// pprof.WriteHeapProfile(f2)
+	f2, err := os.Create("heap")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(f2)
 
 	mwm := aqua.NewMWManager()
 
@@ -33,14 +37,27 @@ func main() {
 	download_node.NextNode(transfer_node)
 
 	// 注册业务线
-	mwm.RegisterTXL("downloader", fetch_node)
+	mwm.Register(fetch_node)
+
+	// time.AfterFunc(3*time.Second, func() {
+	// 	mwm.MWIter("1")
+	// 	err := mwm.DropMW("download")
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	mwm.MWIter("2")
+	// })
 
 	time.AfterFunc(3*time.Second, func() {
-		mwm.ServiceFinder("downloader", "1")
-		mwm.DropMW("downloader", "download")
-		mwm.ServiceFinder("downloader", "2")
+		mwm.MWIter("1")
+		record_node := aqua.NewMWNode("record", plg.NewStorage, 1, 100)
+		err := mwm.InsertMWBack("transfer", record_node)
+		if err != nil {
+			fmt.Println(err)
+		}
+		mwm.MWIter("2")
 	})
 
 	// 启动相应业务线
-	mwm.ExecuteByName("downloader")
+	mwm.ExecuteByName()
 }

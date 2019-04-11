@@ -24,6 +24,9 @@ func (m *Transfer) Run(grt_idx int) {
 	m.Pop(func(c *aqua.Carrior) {
 		ins := m.Instance(c)
 		m.Template(ins)
+		m.OutChan.Push(&aqua.Carrior{
+			Data: []byte("transfer"),
+		})
 	}, "trans")
 	m.Close()
 }
