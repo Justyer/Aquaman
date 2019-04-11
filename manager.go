@@ -1,14 +1,17 @@
 package aqua
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 )
 
 type MiddleManager interface {
 	SetMWNode(mwn *MWNode)
-	SetInChan(in chan *Carrior)
-	SetOutChan(out chan *Carrior)
-	DefaultChanConfig()
+	SetInChan(in *Chan)
+	SetOutChan(out *Chan)
+	GetInChan() *Chan
+	GetOutChan() *Chan
 	Run(int)
 }
 
@@ -34,68 +37,70 @@ func (mgr *MiddlewareManager) ExecuteByName(n string) {
 }
 
 // 每个中间件创建的channel为前置
-func (mgr *MiddlewareManager) prefixChannel(n string) {
-	wg := &sync.WaitGroup{}
+// func (mgr *MiddlewareManager) prefixChannel(n string) {
+// 	wg := &sync.WaitGroup{}
 
-	p := mgr.TXLS[n]
-	var pp *MWNode
-	for {
-		if p == nil {
-			break
-		}
-		var mmrs []MiddleManager
-		chl := make(chan *Carrior, p.CHL_SIZE)
-		for i := 0; i < p.GRT_NUM; i++ {
-			ins := p.Create()
-			ins.SetMWNode(p)
-			ins.SetInChan(chl)
-			mmrs = append(mmrs, ins)
-			wg.Add(1)
-			go func(wg *sync.WaitGroup, i int) {
-				defer wg.Done()
-				ins.Run(i)
-			}(wg, i)
-		}
-		p.Instances = mmrs
-		if pp != nil {
-			for j := 0; j < len(pp.Instances); j++ {
-				pp.Instances[j].SetOutChan(chl)
-				pp.Instances[j].DefaultChanConfig()
-			}
-		}
-		pp = p
-		p = p.Next
-	}
+// 	p := mgr.TXLS[n]
+// 	var pp *MWNode
+// 	for {
+// 		if p == nil {
+// 			break
+// 		}
+// 		var mmrs []MiddleManager
+// 		chl := NewChan()
+// 		chl.Init(p.CHL_SIZE)
+// 		for i := 0; i < p.GRT_NUM; i++ {
+// 			ins := p.Create()
+// 			ins.SetMWNode(p)
+// 			ins.SetInChan(chl)
+// 			mmrs = append(mmrs, ins)
+// 			wg.Add(1)
+// 			go func(wg *sync.WaitGroup, i int) {
+// 				defer wg.Done()
+// 				ins.Run(i)
+// 			}(wg, i)
+// 		}
+// 		p.Instances = mmrs
+// 		if pp != nil {
+// 			for j := 0; j < len(pp.Instances); j++ {
+// 				pp.Instances[j].SetOutChan(chl)
+// 				pp.Instances[j].DefaultChanConfig()
+// 			}
+// 		}
+// 		pp = p
+// 		p = p.Next
+// 	}
 
-	wg.Wait()
-}
+// 	wg.Wait()
+// }
 
 // 每个中间件创建的channel为后置
 func (mgr *MiddlewareManager) suffixChannel(n string) {
 	wg := &sync.WaitGroup{}
 
 	p := mgr.TXLS[n]
-	var pp chan *Carrior
+	var pp *Chan
 	for {
 		if p == nil {
 			break
 		}
 		var mmrs []MiddleManager
-		chl := make(chan *Carrior, p.CHL_SIZE)
+		chl := NewChan()
+		chl.Init(p.CHL_SIZE)
 		for i := 0; i < p.GRT_NUM; i++ {
 			ins := p.Create()
 			ins.SetMWNode(p)
 			ins.SetOutChan(chl)
-			ins.DefaultChanConfig()
 			if pp != nil {
 				ins.SetInChan(pp)
 			}
+
 			mmrs = append(mmrs, ins)
 			wg.Add(1)
-			go func(wg *sync.WaitGroup, i int) {
+			go func(wg *sync.WaitGroup, i int, s string) {
 				defer wg.Done()
 				ins.Run(i)
-			}(wg, i)
+			}(wg, i, p.Name)
 		}
 		pp = chl
 		p.Instances = mmrs
@@ -105,17 +110,51 @@ func (mgr *MiddlewareManager) suffixChannel(n string) {
 	wg.Wait()
 }
 
-// 切换某个中间件的channel
-func (mgr *MiddlewareManager) SwitchChannel(n, mn string) {
+// 拔出某个中间件
+func (mgr *MiddlewareManager) DropMW(n, mn string) error {
+	p := mgr.TXLS[n]
+	var p_in, p_out *Chan
+	for {
+		if p == nil {
+			return errors.New(fmt.Sprintf("have no %s-%s", n, mn))
+		}
+		if p.Name == mn {
+			p_in = p.Instances[0].GetInChan()
+			p_out = p.Instances[0].GetOutChan()
+			for i := 0; i < len(p.Instances); i++ {
+				p.Instances[i].SetInChan(nil)
+			}
+			break
+		}
+		p = p.Next
+	}
+	pn := p.Next
+	if pn != nil {
+		for i := 0; i < len(pn.Instances); i++ {
+			pn.Instances[i].SetInChan(p_in)
+		}
+		p_in.SetFree(p_out.Active())
+	}
+	return nil
+}
+
+//
+func (mgr *MiddlewareManager) ServiceFinder(n, ii string) {
+	fmt.Println(ii)
 	p := mgr.TXLS[n]
 	for {
 		if p == nil {
 			break
 		}
-		if p.Name == mn {
-
+		for i := 0; i < len(p.Instances); i++ {
+			in := p.Instances[i].GetInChan()
+			out := p.Instances[i].GetOutChan()
+			fmt.Printf("%s:\n%#v\n", p.Name, p.Instances[i])
+			if in != nil {
+				fmt.Printf("%#v %#v\n", in.CHL, in.CHL2)
+			}
+			fmt.Printf("%#v %#v\n---\n", out.CHL, out.CHL2)
 		}
+		p = p.Next
 	}
 }
-
-//

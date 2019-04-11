@@ -10,14 +10,9 @@ import (
 
 // 中间件
 type Middleware struct {
-	Node            *aqua.MWNode
-	IN_CHL          chan *aqua.Carrior
-	IN2_CHL         chan *aqua.Carrior
-	IN_CHAN_SWITCH  bool
-	OUT_CHL         chan *aqua.Carrior
-	OUT2_CHL        chan *aqua.Carrior
-	MAIN_OUT_CHL    chan *aqua.Carrior
-	OUT_CHAN_SWITCH bool
+	Node    *aqua.MWNode
+	InChan  *aqua.Chan
+	OutChan *aqua.Chan
 }
 
 func NewMiddleware() aqua.MiddleManager {
@@ -28,43 +23,53 @@ func (m *Middleware) SetMWNode(mwn *aqua.MWNode) {
 	m.Node = mwn
 }
 
-func (m *Middleware) SetInChan(in chan *aqua.Carrior) {
-	m.IN_CHL = in
+func (m *Middleware) SetInChan(c *aqua.Chan) {
+	m.InChan = c
 }
 
-func (m *Middleware) SetOutChan(out chan *aqua.Carrior) {
-	m.OUT_CHL = out
+func (m *Middleware) SetOutChan(c *aqua.Chan) {
+	m.OutChan = c
 }
 
-func (m *Middleware) SetIn2Chan(in chan *aqua.Carrior) {
-	m.IN2_CHL = in
+func (m *Middleware) GetInChan() *aqua.Chan {
+	return m.InChan
 }
 
-func (m *Middleware) SetOut2Chan(out chan *aqua.Carrior) {
-	m.OUT2_CHL = out
+func (m *Middleware) GetOutChan() *aqua.Chan {
+	return m.OutChan
 }
 
-func (m *Middleware) DefaultChanConfig() {
-	m.MAIN_OUT_CHL = m.OUT_CHL
-	m.OUT_CHAN_SWITCH = true
-	m.IN_CHAN_SWITCH = true
-}
+func (m *Middleware) Pop(f func(*aqua.Carrior), nm string) {
+	for {
+		c := m.InChan
+		if c == nil {
+			fmt.Println("break2", nm)
+			break
+		}
+		if c.CHL == nil && c.CHL2 == nil {
+			fmt.Println("break blank bil", nm)
+			break
+		}
+		var cr *aqua.Carrior
+		var isUse bool
+		select {
+		case cr, isUse = <-c.CHL:
+			if !isUse {
+				c.CHL = nil
+			}
+		case cr, isUse = <-c.CHL2:
+			if !isUse {
+				c.CHL2 = nil
+			}
+		}
 
-func (m *Middleware) GetFreeOutChan() chan *aqua.Carrior {
-	if m.OUT_CHAN_SWITCH {
-		return m.OUT2_CHL
-	} else {
-		return m.OUT_CHL
+		switch {
+		case isUse:
+			f(cr)
+		case !isUse && (c.CHL == nil && c.CHL2 == nil):
+			break
+		}
 	}
-}
-
-func (m *Middleware) SwitchOutChan() {
-	if m.OUT_CHAN_SWITCH {
-		m.MAIN_OUT_CHL = m.OUT2_CHL
-	} else {
-		m.MAIN_OUT_CHL = m.OUT_CHL
-	}
-	m.OUT_CHAN_SWITCH = !m.OUT_CHAN_SWITCH
 }
 
 func (m *Middleware) Run(i int) {
@@ -72,12 +77,13 @@ func (m *Middleware) Run(i int) {
 }
 
 func (m *Middleware) Close() {
-	if m.OUT_CHL == nil {
+	if m.OutChan == nil {
+		fmt.Printf("Closedddddd %p OutChan\n", m.OutChan)
 		return
 	}
 	closeNum := atomic.AddInt64(&m.Node.ClosedGRTNum, 1)
 	if closeNum == int64(m.Node.GRT_NUM) {
-		fmt.Printf("Close %p OutChan\n", m.OUT_CHL)
-		close(m.OUT_CHL)
+		fmt.Printf("Close %p OutChan\n", m.OutChan)
+		m.OutChan.Close()
 	}
 }
