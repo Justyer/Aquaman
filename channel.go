@@ -39,9 +39,9 @@ func (c *Chan) Pop(f func(*Carrior)) {
 	}
 }
 
-// func (c *Chan) Switch() {
-// 	c.CHL_USE = !c.CHL_USE
-// }
+func (c *Chan) Switch() {
+	c.CHL_USE = !c.CHL_USE
+}
 
 func (c *Chan) Active() chan *Carrior {
 	if c.CHL_USE {
