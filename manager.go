@@ -40,7 +40,6 @@ func (mgr *MiddlewareManager) ExecuteByName() {
 // 每个中间件创建的channel为前置
 // func (mgr *MiddlewareManager) prefixChannel(n string) {
 // 	wg := &sync.WaitGroup{}
-
 // 	p := mgr.TXL[n]
 // 	var pp *MWNode
 // 	for {
