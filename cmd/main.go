@@ -12,14 +12,14 @@ import (
 )
 
 func main() {
-	f, err := os.Create("cpu")
+	f, err := os.Create("cpu.prof")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	f2, err := os.Create("heap")
+	f2, err := os.Create("heap.prof")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,10 +48,19 @@ func main() {
 	// 	mwm.MWIter("2")
 	// })
 
+	// time.AfterFunc(3*time.Second, func() {
+	// 	mwm.MWIter("1")
+	// 	record_node := aqua.NewMWNode("record", plg.NewStorage, 1, 100)
+	// 	err := mwm.InsertMWBack("transfer", record_node)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	mwm.MWIter("2")
+	// })
+
 	time.AfterFunc(3*time.Second, func() {
 		mwm.MWIter("1")
-		record_node := aqua.NewMWNode("record", plg.NewStorage, 1, 100)
-		err := mwm.InsertMWBack("transfer", record_node)
+		err := mwm.ChangeChanBufferSize("download", 200)
 		if err != nil {
 			fmt.Println(err)
 		}

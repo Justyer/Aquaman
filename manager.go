@@ -27,7 +27,7 @@ func NewMWManager() *MiddlewareManager {
 	}
 }
 
-// 注册一条业务线
+// 注册业务线
 func (mgr *MiddlewareManager) Register(mwn *MWNode) {
 	mgr.TXL = mwn
 }
@@ -109,12 +109,35 @@ func (mgr *MiddlewareManager) suffixChannel() {
 	mgr.wg.Wait()
 }
 
+func (mgr *MiddlewareManager) ChangeChanBufferSize(mn string, chl_size int) error {
+	p := mgr.TXL
+	for {
+		if p == nil {
+			return errors.New(fmt.Sprintf("have no mw: %s", mn))
+		}
+		if p.Name == mn {
+			out_chl := p.Instances[0].GetOutChan()
+			if out_chl.Free() == nil {
+				chl := make(chan *Carrior, chl_size)
+				out_chl.SetFree(chl)
+				out_chl.Switch()
+				close(out_chl.Free())
+				break
+			} else {
+				return errors.New(fmt.Sprintf("mw %s: have no free chan", mn))
+			}
+		}
+		p = p.Next
+	}
+	return nil
+}
+
 // 在某个中间件的前面插入添加的中间件
 func (mgr *MiddlewareManager) InsertMWBack(mn string, nn *MWNode) error {
 	p := mgr.TXL
 	for {
 		if p == nil {
-			return errors.New(fmt.Sprintf("have no middle: %s", mn))
+			return errors.New(fmt.Sprintf("have no mw: %s", mn))
 		}
 		if p.Name == mn {
 			var mmrs []MiddleManager
@@ -155,7 +178,7 @@ func (mgr *MiddlewareManager) DropMW(mn string) error {
 	var p_in, p_out *Chan
 	for {
 		if p == nil {
-			return errors.New(fmt.Sprintf("have no middle: %s", mn))
+			return errors.New(fmt.Sprintf("have no mw: %s", mn))
 		}
 		if p.Name == mn {
 			p_in = p.Instances[0].GetInChan()
@@ -182,33 +205,21 @@ func (mgr *MiddlewareManager) DropMW(mn string) error {
 // 遍历当前业务线的中间件组成
 func (mgr *MiddlewareManager) MWIter(ii string) {
 	fmt.Println(ii, "---------")
-	// p := mgr.TXL
-	// for {
-	// 	if p == nil {
-	// 		break
-	// 	}
-	// 	for i := 0; i < len(p.Instances); i++ {
-	// 		in := p.Instances[i].GetInChan()
-	// 		out := p.Instances[i].GetOutChan()
-	// 		fmt.Printf("%s:\n%#v\n", p.Name, p.Instances[i])
-	// 		if in != nil {
-	// 			fmt.Printf("%#v %#v\n", in.CHL, in.CHL2)
-	// 		}
-	// 		fmt.Printf("%#v %#v\n---\n", out.CHL, out.CHL2)
-	// 	}
-	// 	p = p.Next
-	// }
-
 	p := mgr.TXL
 	for {
 		if p == nil {
 			break
 		}
 		for i := 0; i < len(p.Instances); i++ {
-			fmt.Print(p.Name, " ")
+			in := p.Instances[i].GetInChan()
+			out := p.Instances[i].GetOutChan()
+			fmt.Printf("%s:\n%#v\n", p.Name, p.Instances[i])
+			if in != nil {
+				fmt.Printf("%#v %#v\n", in.CHL, in.CHL2)
+			}
+			fmt.Printf("%#v %#v\n---\n", out.CHL, out.CHL2)
 		}
 		p = p.Next
 	}
 	fmt.Println("---------")
-
 }
