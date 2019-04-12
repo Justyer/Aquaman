@@ -108,6 +108,7 @@ func (mgr *MiddlewareManager) suffixChannel() {
 	mgr.wg.Wait()
 }
 
+// 修改缓冲区大小
 func (mgr *MiddlewareManager) ChangeChanBufferSize(mn string, chl_size int) error {
 	p := mgr.TXL
 	for {
