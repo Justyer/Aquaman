@@ -31,6 +31,6 @@ func main() {
 	mwm.Register(fetch_node)
 
 	// 启动相应业务线
-	mwm.ExecuteByName()
+	mwm.Run()
 }
 ```
