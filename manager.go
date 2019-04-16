@@ -33,7 +33,7 @@ func (mgr *MiddlewareManager) Register(mwn *MWNode) {
 }
 
 // 根据业务线名字执行任务
-func (mgr *MiddlewareManager) ExecuteByName() {
+func (mgr *MiddlewareManager) Run() {
 	mgr.suffixChannel()
 }
 
@@ -78,6 +78,8 @@ func (mgr *MiddlewareManager) ExecuteByName() {
 func (mgr *MiddlewareManager) suffixChannel() {
 	p := mgr.TXL
 	var pp *Chan
+	var exe_order []MiddleManager
+	var exe_order_idx []int
 	for {
 		if p == nil {
 			break
@@ -92,17 +94,21 @@ func (mgr *MiddlewareManager) suffixChannel() {
 			if pp != nil {
 				ins.SetInChan(pp)
 			}
-
 			mmrs = append(mmrs, ins)
-			mgr.wg.Add(1)
-			go func(wg *sync.WaitGroup, i int) {
-				defer wg.Done()
-				ins.Run(i)
-			}(mgr.wg, i)
+			exe_order = append(exe_order, ins)
+			exe_order_idx = append(exe_order_idx, i)
 		}
 		pp = chl
 		p.Instances = mmrs
 		p = p.Next
+	}
+
+	for i := len(exe_order) - 1; i >= 0; i-- {
+		mgr.wg.Add(1)
+		go func(wg *sync.WaitGroup, i int) {
+			defer wg.Done()
+			exe_order[i].Run(exe_order_idx[i])
+		}(mgr.wg, i)
 	}
 
 	mgr.wg.Wait()
