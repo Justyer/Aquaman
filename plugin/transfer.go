@@ -27,7 +27,7 @@ func (m *Transfer) Run(grt_idx int) {
 		m.OutChan.Push(&aqua.Carrior{
 			Data: []byte("transfer"),
 		})
-	}, "trans")
+	})
 	m.Close()
 }
 func (m *Transfer) Instance(c *aqua.Carrior) Transferer {

@@ -20,6 +20,7 @@ func (c *Chan) Push(e *Carrior) {
 	c.Active() <- e
 }
 
+// 有问题，暂停使用
 func (c *Chan) Pop(f func(*Carrior)) {
 	for {
 		if c.CHL == nil && c.CHL2 == nil {

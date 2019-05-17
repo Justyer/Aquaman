@@ -10,6 +10,7 @@ import (
 
 // 中间件
 type Middleware struct {
+	Name    string
 	Node    *aqua.MWNode
 	InChan  *aqua.Chan
 	OutChan *aqua.Chan
@@ -39,7 +40,7 @@ func (m *Middleware) GetOutChan() *aqua.Chan {
 	return m.OutChan
 }
 
-func (m *Middleware) Pop(f func(*aqua.Carrior), nm string) {
+func (m *Middleware) Pop(f func(*aqua.Carrior)) {
 	for {
 		c := m.InChan
 		if c == nil {

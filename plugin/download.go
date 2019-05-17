@@ -27,7 +27,7 @@ func (m *Download) Run(grt_idx int) {
 		m.OutChan.Push(&aqua.Carrior{
 			Data: []byte("download"),
 		})
-	}, "down")
+	})
 
 	m.Close()
 }

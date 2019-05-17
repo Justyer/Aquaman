@@ -24,7 +24,7 @@ func (m *Storage) Run(grt_idx int) {
 	m.Pop(func(c *aqua.Carrior) {
 		ins := m.Instance(c)
 		m.Template(ins)
-	}, "store")
+	})
 	m.Close()
 }
 func (m *Storage) Instance(c *aqua.Carrior) Storager {
